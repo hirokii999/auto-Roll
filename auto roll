@@ -144,7 +144,7 @@ task.spawn(function()
         for dice, active in pairs(Toggles) do
             if active then
                 pcall(function() remote:InvokeServer(dice) end)
-                task.wait(0.15)
+                task.wait(0.09)
             end
         end
         task.wait(0.1)
