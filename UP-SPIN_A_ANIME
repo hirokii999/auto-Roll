@@ -21,11 +21,11 @@ local RS = game:GetService("ReplicatedStorage")
 local LP = game:GetService("Players").LocalPlayer
 local PGui = LP:FindFirstChildOfClass("PlayerGui") or LP:FindFirstChild("PlayerGui")
 
-if PGui:FindFirstChild("DicePotionManager_V9") then PGui["DicePotionManager_V9"]:Destroy() end
+if PGui:FindFirstChild("DicePotionManager_V10") then PGui["DicePotionManager_V10"]:Destroy() end
 
 -- [[ UI SETUP ]]
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "DicePotionManager_V9"; ScreenGui.ResetOnSpawn = false; ScreenGui.Parent = PGui
+ScreenGui.Name = "DicePotionManager_V10"; ScreenGui.ResetOnSpawn = false; ScreenGui.Parent = PGui
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 230, 0, 350); MainFrame.Position = UDim2.new(0.5, -115, 0.5, -175)
@@ -36,7 +36,7 @@ Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 6)
 -- [[ HEADER ]]
 local Title = Instance.new("TextButton")
 Title.Size = UDim2.new(1, 0, 0, 30); Title.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-Title.Text = "  DICE & POTION V9 [TAP HIDE]"; Title.TextColor3 = Color3.fromRGB(255, 60, 60)
+Title.Text = "  DICE & POTION V10 [FIX]"; Title.TextColor3 = Color3.fromRGB(255, 60, 60)
 Title.TextXAlignment = Enum.TextXAlignment.Left; Title.Font = Enum.Font.GothamBold; Title.TextSize = 10; Title.Parent = MainFrame
 Instance.new("UICorner", Title).CornerRadius = UDim.new(0, 6)
 
@@ -44,7 +44,7 @@ local Container = Instance.new("Frame")
 Container.Size = UDim2.new(1, 0, 1, -30); Container.Position = UDim2.new(0, 0, 0, 30)
 Container.BackgroundTransparency = 1; Container.Parent = MainFrame
 
--- [[ MASTER SWITCHES SECTION ]]
+-- [[ MASTER SWITCHES ]]
 local MasterGrid = Instance.new("Frame")
 MasterGrid.Size = UDim2.new(1, -10, 0, 65); MasterGrid.Position = UDim2.new(0, 5, 0, 5)
 MasterGrid.BackgroundTransparency = 1; MasterGrid.Parent = Container
@@ -81,7 +81,7 @@ local function AddHeader(txt)
     h.BackgroundTransparency = 1; h.Font = Enum.Font.GothamBold; h.TextSize = 8; h.Parent = Scroll
 end
 
--- Dice Section
+-- DICE SECTION
 AddHeader("--- SELECT DICE ---")
 for _, dName in ipairs(diceList) do
     local Item = Instance.new("Frame"); Item.Size = UDim2.new(1, -4, 0, 28); Item.BackgroundColor3 = Color3.fromRGB(25, 25, 25); Item.Parent = Scroll
@@ -102,7 +102,7 @@ for _, dName in ipairs(diceList) do
     Toggle(0.88, "B", Color3.fromRGB(60, 255, 60), BuyToggles)
 end
 
--- Potion Section
+-- POTION SECTION
 AddHeader("--- SELECT POTIONS ---")
 for _, pName in ipairs(potionList) do
     local Item = Instance.new("Frame"); Item.Size = UDim2.new(1, -4, 0, 28); Item.BackgroundColor3 = Color3.fromRGB(25, 25, 25); Item.Parent = Scroll
@@ -119,42 +119,52 @@ for _, pName in ipairs(potionList) do
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0,4)
 end
 
--- [[ CORE LOGIC ]]
+-- [[ FIXED CORE LOGIC ]]
 local Funcs = RS:WaitForChild("Functions", 10)
 local BuyPotionRem = Funcs:WaitForChild("BuyPotion", 5)
 local BuyDiceRem = Funcs:WaitForChild("BuyDice", 5)
 local RollRem = Funcs:WaitForChild("DiceClientToServer", 5)
 local EquipRem = RS:WaitForChild("Events", 5):WaitForChild("EquipBestCharacters", 5)
 
-task.spawn(function() -- Roll Loop
-    while task.wait(0.03) do
+-- Auto Roll
+task.spawn(function()
+    while task.wait(0.05) do
         if MasterRoll then
-            for d, a in pairs(RollToggles) do if a then task.spawn(function() pcall(function() RollRem:InvokeServer(d) end) end) end end
+            for d, a in pairs(RollToggles) do if a then pcall(function() RollRem:InvokeServer(d) end) end end
         end
     end
 end)
 
-task.spawn(function() -- Buy Dice Loop
+-- Auto Buy Dice
+task.spawn(function()
     while task.wait(1.5) do
         if MasterBuy then
-            for d, a in pairs(BuyToggles) do if a then task.spawn(function() pcall(function() BuyDiceRem:InvokeServer(d, 2) end) end) end end
+            for d, a in pairs(BuyToggles) do if a then pcall(function() BuyDiceRem:InvokeServer(d, 2) end) end end
         end
     end
 end)
 
-task.spawn(function() -- Buy Potion Loop
+-- FIXED AUTO BUY POTION
+task.spawn(function()
     while task.wait(2) do
         if MasterPotion then
-            for p, a in pairs(PotionToggles) do if a then task.spawn(function() pcall(function() BuyPotionRem:InvokeServer(p, 1) end) end) end end
+            for pName, isActive in pairs(PotionToggles) do
+                if isActive then
+                    -- Firing Remote with Name and Amount (1)
+                    pcall(function()
+                        BuyPotionRem:InvokeServer(pName, 1)
+                    end)
+                end
+            end
         end
     end
 end)
 
-task.spawn(function() -- Equip Loop
+task.spawn(function()
     while task.wait(5) do if AutoEquip then pcall(function() EquipRem:FireServer() end) end end
 end)
 
---interaction logic
+-- Interaction
 Title.MouseButton1Click:Connect(function()
     IsMinimized = not IsMinimized; Container.Visible = not IsMinimized
     MainFrame.Size = IsMinimized and UDim2.new(0, 230, 0, 30) or UDim2.new(0, 230, 0, 350)
@@ -164,4 +174,4 @@ local d,ds,sp; Title.InputBegan:Connect(function(i) if i.UserInputType==Enum.Use
 UIS.InputChanged:Connect(function(i) if d and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then local delta=i.Position-ds MainFrame.Position=UDim2.new(sp.X.Scale,sp.X.Offset+delta.X,sp.Y.Scale,sp.Y.Offset+delta.Y) end end)
 UIS.InputEnded:Connect(function(i) d=false end)
 
-warn("Dice & Potion Manager V9 Active.")
+warn("Dice & Potion Manager V10 [FIXED POTIONS] Active.")
