@@ -6,95 +6,83 @@ local diceList = {
     "Godly Dice", "Universal Dice", "Transcendent Dice", "Blackhole Dice", "Infinity Dice"
 }
 
--- Separate Toggle Tables
-local RollToggles = {}
-local BuyToggles = {}
+local RollToggles, BuyToggles = {}, {}
+local AutoEquipEnabled = false
 
 local UIS = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 local RS = game:GetService("ReplicatedStorage")
 
--- [[ PLAYER & UI CLEANUP ]]
 local LP = Players.LocalPlayer
 local PGui = LP:FindFirstChildOfClass("PlayerGui") or LP:FindFirstChild("PlayerGui")
 
-if PGui:FindFirstChild("DiceManager_V2") then
-    PGui["DiceManager_V2"]:Destroy()
-end
+if PGui:FindFirstChild("DiceManager_V4") then PGui["DiceManager_V4"]:Destroy() end
 
 -- [[ UI SETUP ]]
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "DiceManager_V2"
+ScreenGui.Name = "DiceManager_V4"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.DisplayOrder = 999
 ScreenGui.Parent = PGui
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 320, 0, 400) -- Widened for two columns
-MainFrame.Position = UDim2.new(0.5, -160, 0.5, -200)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MainFrame.Size = UDim2.new(0, 320, 0, 440)
+MainFrame.Position = UDim2.new(0.5, -160, 0.5, -220)
+MainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true 
 MainFrame.Parent = ScreenGui
-
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
 
 -- [[ HEADER ]]
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 40)
-Title.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-Title.Text = "  DICE MANAGER (ROLL | BUY)"
+Title.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Title.Text = "  DICE MANAGER V4 [TURBO]"
 Title.TextColor3 = Color3.fromRGB(255, 60, 60)
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 14
 Title.Parent = MainFrame
-
 Instance.new("UICorner", Title).CornerRadius = UDim.new(0, 8)
 
--- [[ LIST HEADERS ]]
-local RollHeader = Instance.new("TextLabel")
-RollHeader.Size = UDim2.new(0, 40, 0, 20)
-RollHeader.Position = UDim2.new(0.68, 0, 0, 45)
-RollHeader.Text = "ROLL"
-RollHeader.TextColor3 = Color3.fromRGB(150, 150, 150)
-RollHeader.Font = Enum.Font.GothamBold
-RollHeader.TextSize = 10
-RollHeader.BackgroundTransparency = 1
-RollHeader.Parent = MainFrame
+-- [[ AUTO EQUIP BUTTON ]]
+local EquipBtn = Instance.new("TextButton")
+EquipBtn.Size = UDim2.new(1, -20, 0, 30)
+EquipBtn.Position = UDim2.new(0, 10, 0, 50)
+EquipBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+EquipBtn.Text = "AUTO EQUIP BEST: OFF"
+EquipBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+EquipBtn.Font = Enum.Font.GothamBold
+EquipBtn.TextSize = 12
+EquipBtn.Parent = MainFrame
+Instance.new("UICorner", EquipBtn).CornerRadius = UDim.new(0, 4)
 
-local BuyHeader = Instance.new("TextLabel")
-BuyHeader.Size = UDim2.new(0, 40, 0, 20)
-BuyHeader.Position = UDim2.new(0.85, 0, 0, 45)
-BuyHeader.Text = "BUY"
-BuyHeader.TextColor3 = Color3.fromRGB(150, 150, 150)
-BuyHeader.Font = Enum.Font.GothamBold
-BuyHeader.TextSize = 10
-BuyHeader.BackgroundTransparency = 1
-BuyHeader.Parent = MainFrame
+EquipBtn.MouseButton1Click:Connect(function()
+    AutoEquipEnabled = not AutoEquipEnabled
+    EquipBtn.Text = "AUTO EQUIP BEST: " .. (AutoEquipEnabled and "ON" or "OFF")
+    EquipBtn.BackgroundColor3 = AutoEquipEnabled and Color3.fromRGB(0, 120, 255) or Color3.fromRGB(30, 30, 30)
+end)
 
+-- [[ LIST ]]
 local Scroll = Instance.new("ScrollingFrame")
-Scroll.Size = UDim2.new(1, -10, 1, -75)
-Scroll.Position = UDim2.new(0, 5, 0, 70)
+Scroll.Size = UDim2.new(1, -10, 1, -110)
+Scroll.Position = UDim2.new(0, 5, 0, 100)
 Scroll.BackgroundTransparency = 1
-Scroll.BorderSizePixel = 0
-Scroll.CanvasSize = UDim2.new(0, 0, 0, #diceList * 38)
+Scroll.CanvasSize = UDim2.new(0, 0, 0, #diceList * 36)
 Scroll.ScrollBarThickness = 2
 Scroll.Parent = MainFrame
 
 local ListLayout = Instance.new("UIListLayout")
 ListLayout.Parent = Scroll
-ListLayout.Padding = UDim.new(0, 5)
+ListLayout.Padding = UDim.new(0, 4)
 
--- [[ GENERATE LIST ]]
 for _, diceName in ipairs(diceList) do
     RollToggles[diceName] = false
     BuyToggles[diceName] = false
 
     local Item = Instance.new("Frame")
     Item.Size = UDim2.new(1, -5, 0, 32)
-    Item.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    Item.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
     Item.Parent = Scroll
     Instance.new("UICorner", Item).CornerRadius = UDim.new(0, 4)
 
@@ -109,91 +97,71 @@ for _, diceName in ipairs(diceList) do
     Label.BackgroundTransparency = 1
     Label.Parent = Item
 
-    -- ROLL BUTTON
-    local RollBtn = Instance.new("TextButton")
-    RollBtn.Size = UDim2.new(0, 40, 0, 22)
-    RollBtn.Position = UDim2.new(0.7, -5, 0.5, -11)
-    RollBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    RollBtn.Text = "OFF"
-    RollBtn.TextColor3 = Color3.new(1, 1, 1)
-    RollBtn.Font = Enum.Font.GothamBold
-    RollBtn.TextSize = 9
-    RollBtn.Parent = Item
-    Instance.new("UICorner", RollBtn).CornerRadius = UDim.new(0, 4)
+    local function CreateToggle(pos, txt, color, tbl)
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(0, 40, 0, 22)
+        btn.Position = UDim2.new(pos, -5, 0.5, -11)
+        btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+        btn.Text = txt
+        btn.TextColor3 = Color3.new(1, 1, 1)
+        btn.Font = Enum.Font.GothamBold
+        btn.TextSize = 8
+        btn.Parent = Item
+        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+        btn.MouseButton1Click:Connect(function()
+            tbl[diceName] = not tbl[diceName]
+            btn.BackgroundColor3 = tbl[diceName] and color or Color3.fromRGB(45, 45, 45)
+        end)
+    end
 
-    RollBtn.MouseButton1Click:Connect(function()
-        RollToggles[diceName] = not RollToggles[diceName]
-        RollBtn.Text = RollToggles[diceName] and "ON" or "OFF"
-        RollBtn.BackgroundColor3 = RollToggles[diceName] and Color3.fromRGB(255, 60, 60) or Color3.fromRGB(50, 50, 50)
-    end)
-
-    -- BUY BUTTON
-    local BuyBtn = Instance.new("TextButton")
-    BuyBtn.Size = UDim2.new(0, 40, 0, 22)
-    BuyBtn.Position = UDim2.new(0.88, -5, 0.5, -11)
-    BuyBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    BuyBtn.Text = "OFF"
-    BuyBtn.TextColor3 = Color3.new(1, 1, 1)
-    BuyBtn.Font = Enum.Font.GothamBold
-    BuyBtn.TextSize = 9
-    BuyBtn.Parent = Item
-    Instance.new("UICorner", BuyBtn).CornerRadius = UDim.new(0, 4)
-
-    BuyBtn.MouseButton1Click:Connect(function()
-        BuyToggles[diceName] = not BuyToggles[diceName]
-        BuyBtn.Text = BuyToggles[diceName] and "ON" or "OFF"
-        BuyBtn.BackgroundColor3 = BuyToggles[diceName] and Color3.fromRGB(60, 255, 60) or Color3.fromRGB(50, 50, 50)
-    end)
+    CreateToggle(0.7, "ROLL", Color3.fromRGB(255, 60, 60), RollToggles)
+    CreateToggle(0.88, "BUY", Color3.fromRGB(60, 255, 60), BuyToggles)
 end
 
--- [[ DRAGGING SYSTEM ]]
-local dragging, dragStart, startPos
-Title.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        startPos = MainFrame.Position
-    end
-end)
-UIS.InputChanged:Connect(function(input)
-    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - dragStart
-        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end)
-UIS.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
-end)
-
--- [[ SEPARATED BACKGROUND LOGIC ]]
+-- [[ TURBO LOGIC ]]
 local Functions = RS:WaitForChild("Functions", 10)
+local Events = RS:WaitForChild("Events", 10)
 local RollRemote = Functions:WaitForChild("DiceClientToServer", 5)
 local BuyRemote = Functions:WaitForChild("BuyDice", 5)
+local EquipRemote = Events:WaitForChild("EquipBestCharacters", 5)
 
--- Loop 1: Auto Roll (Faster)
+-- Turbo Roll Loop (Maximum Speed)
 task.spawn(function()
     while true do
+        local start = os.clock()
         for dice, active in pairs(RollToggles) do
-            if active then
-                pcall(function() RollRemote:InvokeServer(dice) end)
-                task.wait(0.05)
+            if active then 
+                task.spawn(function() pcall(function() RollRemote:InvokeServer(dice) end) end)
             end
         end
-        task.wait(0.1)
+        -- Dynamic wait to prevent frame drops
+        task.wait(0.03) 
     end
 end)
 
--- Loop 2: Auto Buy (Slower cycle)
+-- Turbo Buy Loop
 task.spawn(function()
     while true do
         for dice, active in pairs(BuyToggles) do
-            if active then
-                pcall(function() BuyRemote:InvokeServer(dice, 2) end)
-                task.wait(0.3) -- Matches your original waitTime
+            if active then 
+                task.spawn(function() pcall(function() BuyRemote:InvokeServer(dice, 2) end) end)
             end
         end
-        task.wait(5) -- Matches your original cycleDelay
+        task.wait(2) -- Reduced cycle delay from 5s to 2s
     end
 end)
 
-warn("Dice Manager V2: Separate Roll & Buy Active.")
+-- Auto Equip Loop (Every 5 seconds instead of 10)
+task.spawn(function()
+    while true do
+        if AutoEquipEnabled then pcall(function() EquipRemote:FireServer() end) end
+        task.wait(5)
+    end
+end)
+
+-- Draggable logic
+local d,ds,sp; Title.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 then d=true ds=i.Position sp=MainFrame.Position end end)
+UIS.InputChanged:Connect(function(i) if d and i.UserInputType==Enum.UserInputType.MouseMovement then local delta=i.Position-ds MainFrame.Position=UDim2.new(sp.X.Scale,sp.X.Offset+delta.X,sp.Y.Scale,sp.Y.Offset+delta.Y) end end)
+UIS.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 then d=false end end)
+
+warn("Dice Manager V4: Speed Optimized.")
