@@ -137,14 +137,14 @@ task.spawn(function()
         if func then
             remote = func:FindFirstChild("DiceClientToServer")
         end
-        task.wait(1)
+        task.wait(0.01)
     end
 
     while true do
         for dice, active in pairs(Toggles) do
             if active then
                 pcall(function() remote:InvokeServer(dice) end)
-                task.wait(0.09)
+                task.wait(0.01)
             end
         end
         task.wait(0.01)
