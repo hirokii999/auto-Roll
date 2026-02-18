@@ -1,4 +1,4 @@
--- [[ SETTINGS & LIST ]]
+-- [[ SETTINGS & LISTS ]]
 local diceList = {
     "Normal Dice", "Gold Dice", "Glass Dice", "Emerald Dice", "Diamond Dice", "Ocean Dice", 
     "Lava Dice", "Sapphire Dice", "Ruby Dice", "Obsidian Dice", "Evil Dice", 
@@ -6,66 +6,162 @@ local diceList = {
     "Godly Dice", "Universal Dice", "Transcendent Dice", "Blackhole Dice", "Infinity Dice"
 }
 
-local RollToggles, BuyToggles = {}, {}
-local AutoEquipEnabled = false
-local IsMinimized = false
+local potionList = {
+    "Mini Cash Potion", "Mini Luck Potion", "Enhanced Luck Potion", 
+    "Enhanced Cash Potion", "Ultimate Cash Potion", "Ultimate Luck Potion"
+}
+
+-- Master Toggles
+local MasterRoll, MasterBuy, MasterPotion, AutoEquip = false, false, false, false
+-- Item Toggles
+local RollToggles, BuyToggles, PotionToggles = {}, {}, {}
 
 local UIS = game:GetService("UserInputService")
-local Players = game:GetService("Players")
 local RS = game:GetService("ReplicatedStorage")
-
-local LP = Players.LocalPlayer
+local LP = game:GetService("Players").LocalPlayer
 local PGui = LP:FindFirstChildOfClass("PlayerGui") or LP:FindFirstChild("PlayerGui")
 
-if PGui:FindFirstChild("DiceManager_Mobile") then PGui["DiceManager_Mobile"]:Destroy() end
+if PGui:FindFirstChild("DicePotionManager_V9") then PGui["DicePotionManager_V9"]:Destroy() end
 
 -- [[ UI SETUP ]]
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "DiceManager_Mobile"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = PGui
+ScreenGui.Name = "DicePotionManager_V9"; ScreenGui.ResetOnSpawn = false; ScreenGui.Parent = PGui
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 220, 0, 300) -- Smaller width/height for mobile
-MainFrame.Position = UDim2.new(0.5, -110, 0.5, -150)
-MainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
-MainFrame.BorderSizePixel = 0
-MainFrame.Active = true 
-MainFrame.Parent = ScreenGui
+MainFrame.Size = UDim2.new(0, 230, 0, 350); MainFrame.Position = UDim2.new(0.5, -115, 0.5, -175)
+MainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 12); MainFrame.BorderSizePixel = 0; MainFrame.Active = true 
+MainFrame.ClipsDescendants = true; MainFrame.Parent = ScreenGui
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 6)
 
--- [[ HEADER / MINIMIZE BUTTON ]]
-local Title = Instance.new("TextButton") -- Changed to TextButton for minimizing
-Title.Size = UDim2.new(1, 0, 0, 30)
-Title.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-Title.Text = "  DICE MANAGER (Tap to Hide)"
-Title.TextColor3 = Color3.fromRGB(255, 60, 60)
-Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 10
-Title.Parent = MainFrame
+-- [[ HEADER ]]
+local Title = Instance.new("TextButton")
+Title.Size = UDim2.new(1, 0, 0, 30); Title.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Title.Text = "  DICE & POTION V9 [TAP HIDE]"; Title.TextColor3 = Color3.fromRGB(255, 60, 60)
+Title.TextXAlignment = Enum.TextXAlignment.Left; Title.Font = Enum.Font.GothamBold; Title.TextSize = 10; Title.Parent = MainFrame
 Instance.new("UICorner", Title).CornerRadius = UDim.new(0, 6)
 
--- [[ CONTAINER (Everything inside this hides when minimized) ]]
 local Container = Instance.new("Frame")
-Container.Size = UDim2.new(1, 0, 1, -30)
-Container.Position = UDim2.new(0, 0, 0, 30)
-Container.BackgroundTransparency = 1
-Container.Parent = MainFrame
+Container.Size = UDim2.new(1, 0, 1, -30); Container.Position = UDim2.new(0, 0, 0, 30)
+Container.BackgroundTransparency = 1; Container.Parent = MainFrame
 
--- [[ AUTO EQUIP BUTTON ]]
-local EquipBtn = Instance.new("TextButton")
-EquipBtn.Size = UDim2.new(1, -10, 0, 25)
-EquipBtn.Position = UDim2.new(0, 5, 0, 5)
-EquipBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-EquipBtn.Text = "AUTO EQUIP: OFF"
-EquipBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
-EquipBtn.Font = Enum.Font.GothamBold
-EquipBtn.TextSize = 10
-EquipBtn.Parent = Container
-Instance.new("UICorner", EquipBtn).CornerRadius = UDim.new(0, 4)
+-- [[ MASTER SWITCHES SECTION ]]
+local MasterGrid = Instance.new("Frame")
+MasterGrid.Size = UDim2.new(1, -10, 0, 65); MasterGrid.Position = UDim2.new(0, 5, 0, 5)
+MasterGrid.BackgroundTransparency = 1; MasterGrid.Parent = Container
 
--- [[ LIST ]]
+local function CreateMaster(name, pos, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.48, 0, 0, 28); btn.Position = pos; btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    btn.Text = name..": OFF"; btn.TextColor3 = Color3.new(0.7,0.7,0.7); btn.Font = Enum.Font.GothamBold; btn.TextSize = 8; btn.Parent = MasterGrid
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+    local active = false
+    btn.MouseButton1Click:Connect(function()
+        active = not active
+        btn.Text = name..": "..(active and "ON" or "OFF")
+        btn.BackgroundColor3 = active and Color3.fromRGB(255, 60, 60) or Color3.fromRGB(30, 30, 30)
+        btn.TextColor3 = active and Color3.new(1,1,1) or Color3.new(0.7,0.7,0.7)
+        callback(active)
+    end)
+end
+
+CreateMaster("ALL ROLL", UDim2.new(0, 0, 0, 0), function(v) MasterRoll = v end)
+CreateMaster("ALL BUY", UDim2.new(0.52, 0, 0, 0), function(v) MasterBuy = v end)
+CreateMaster("ALL POTS", UDim2.new(0, 0, 0, 32), function(v) MasterPotion = v end)
+CreateMaster("EQUIP BEST", UDim2.new(0.52, 0, 0, 32), function(v) AutoEquip = v end)
+
+-- [[ SCROLL LIST ]]
 local Scroll = Instance.new("ScrollingFrame")
-Scroll.Size = UDim2.new(1, -6, 1, -40)
-Scroll.Position = U
+Scroll.Size = UDim2.new(1, -6, 1, -75); Scroll.Position = UDim2.new(0, 3, 0, 70)
+Scroll.BackgroundTransparency = 1; Scroll.ScrollBarThickness = 1; Scroll.Parent = Container
+local ListLayout = Instance.new("UIListLayout"); ListLayout.Parent = Scroll; ListLayout.Padding = UDim.new(0, 3)
+
+local function AddHeader(txt)
+    local h = Instance.new("TextLabel")
+    h.Size = UDim2.new(1, 0, 0, 20); h.Text = txt; h.TextColor3 = Color3.fromRGB(150, 150, 150)
+    h.BackgroundTransparency = 1; h.Font = Enum.Font.GothamBold; h.TextSize = 8; h.Parent = Scroll
+end
+
+-- Dice Section
+AddHeader("--- SELECT DICE ---")
+for _, dName in ipairs(diceList) do
+    local Item = Instance.new("Frame"); Item.Size = UDim2.new(1, -4, 0, 28); Item.BackgroundColor3 = Color3.fromRGB(25, 25, 25); Item.Parent = Scroll
+    Instance.new("UICorner", Item).CornerRadius = UDim.new(0, 4)
+    local Label = Instance.new("TextLabel"); Label.Size = UDim2.new(0.5, 0, 1, 0); Label.Position = UDim2.new(0.05, 0, 0, 0); Label.Text = dName
+    Label.TextColor3 = Color3.new(1,1,1); Label.Font = 0; Label.TextSize = 8; Label.BackgroundTransparency = 1; Label.TextXAlignment = 0; Label.Parent = Item
+    
+    local function Toggle(pos, txt, color, tbl)
+        local btn = Instance.new("TextButton"); btn.Size = UDim2.new(0, 35, 0, 20); btn.Position = UDim2.new(pos, -5, 0.5, -10)
+        btn.BackgroundColor3 = Color3.fromRGB(45,45,45); btn.Text = txt; btn.TextSize = 7; btn.Parent = Item
+        btn.MouseButton1Click:Connect(function()
+            tbl[dName] = not tbl[dName]
+            btn.BackgroundColor3 = tbl[dName] and color or Color3.fromRGB(45,45,45)
+        end)
+        Instance.new("UICorner", btn).CornerRadius = UDim.new(0,4)
+    end
+    Toggle(0.68, "R", Color3.fromRGB(255, 60, 60), RollToggles)
+    Toggle(0.88, "B", Color3.fromRGB(60, 255, 60), BuyToggles)
+end
+
+-- Potion Section
+AddHeader("--- SELECT POTIONS ---")
+for _, pName in ipairs(potionList) do
+    local Item = Instance.new("Frame"); Item.Size = UDim2.new(1, -4, 0, 28); Item.BackgroundColor3 = Color3.fromRGB(25, 25, 25); Item.Parent = Scroll
+    Instance.new("UICorner", Item).CornerRadius = UDim.new(0, 4)
+    local Label = Instance.new("TextLabel"); Label.Size = UDim2.new(0.5, 0, 1, 0); Label.Position = UDim2.new(0.05, 0, 0, 0); Label.Text = pName
+    Label.TextColor3 = Color3.new(1,1,1); Label.Font = 0; Label.TextSize = 8; Label.BackgroundTransparency = 1; Label.TextXAlignment = 0; Label.Parent = Item
+
+    local btn = Instance.new("TextButton"); btn.Size = UDim2.new(0, 45, 0, 20); btn.Position = UDim2.new(0.95, -45, 0.5, -10)
+    btn.BackgroundColor3 = Color3.fromRGB(45,45,45); btn.Text = "SELECT"; btn.TextSize = 7; btn.Parent = Item
+    btn.MouseButton1Click:Connect(function()
+        PotionToggles[pName] = not PotionToggles[pName]
+        btn.BackgroundColor3 = PotionToggles[pName] and Color3.fromRGB(170, 0, 255) or Color3.fromRGB(45,45,45)
+    end)
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,4)
+end
+
+-- [[ CORE LOGIC ]]
+local Funcs = RS:WaitForChild("Functions", 10)
+local BuyPotionRem = Funcs:WaitForChild("BuyPotion", 5)
+local BuyDiceRem = Funcs:WaitForChild("BuyDice", 5)
+local RollRem = Funcs:WaitForChild("DiceClientToServer", 5)
+local EquipRem = RS:WaitForChild("Events", 5):WaitForChild("EquipBestCharacters", 5)
+
+task.spawn(function() -- Roll Loop
+    while task.wait(0.03) do
+        if MasterRoll then
+            for d, a in pairs(RollToggles) do if a then task.spawn(function() pcall(function() RollRem:InvokeServer(d) end) end) end end
+        end
+    end
+end)
+
+task.spawn(function() -- Buy Dice Loop
+    while task.wait(1.5) do
+        if MasterBuy then
+            for d, a in pairs(BuyToggles) do if a then task.spawn(function() pcall(function() BuyDiceRem:InvokeServer(d, 2) end) end) end end
+        end
+    end
+end)
+
+task.spawn(function() -- Buy Potion Loop
+    while task.wait(2) do
+        if MasterPotion then
+            for p, a in pairs(PotionToggles) do if a then task.spawn(function() pcall(function() BuyPotionRem:InvokeServer(p, 1) end) end) end end
+        end
+    end
+end)
+
+task.spawn(function() -- Equip Loop
+    while task.wait(5) do if AutoEquip then pcall(function() EquipRem:FireServer() end) end end
+end)
+
+--interaction logic
+Title.MouseButton1Click:Connect(function()
+    IsMinimized = not IsMinimized; Container.Visible = not IsMinimized
+    MainFrame.Size = IsMinimized and UDim2.new(0, 230, 0, 30) or UDim2.new(0, 230, 0, 350)
+end)
+
+local d,ds,sp; Title.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then d=true ds=i.Position sp=MainFrame.Position end end)
+UIS.InputChanged:Connect(function(i) if d and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then local delta=i.Position-ds MainFrame.Position=UDim2.new(sp.X.Scale,sp.X.Offset+delta.X,sp.Y.Scale,sp.Y.Offset+delta.Y) end end)
+UIS.InputEnded:Connect(function(i) d=false end)
+
+warn("Dice & Potion Manager V9 Active.")
