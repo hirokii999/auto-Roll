@@ -1,0 +1,92 @@
+-- [[ FORCE UI TO SHOW ]]
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
+local UIS = game:GetService("UserInputService")
+
+-- Fallback if PlayerGui isn't ready
+if not PlayerGui then
+    PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+end
+
+-- Delete old UI if it exists
+if PlayerGui:FindFirstChild("DiceAutoRoll_Final") then
+    PlayerGui:FindFirstChild("DiceAutoRoll_Final"):Destroy()
+end
+
+-- [[ DATA ]]
+local diceList = {
+    "Normal Dice", "Gold Dice", "Glass Dice", "Emerald Dice", "Diamond Dice", "Ocean Dice", 
+    "Lava Dice", "Sapphire Dice", "Ruby Dice", "Obsidian Dice", "Evil Dice", 
+    "Futuristic Dice", "Angel Dice", "Chromatic Dice", "Ancient Dice", 
+    "Godly Dice", "Universal Dice", "Transcendent Dice", "Blackhole Dice", "Infinity Dice"
+}
+
+local Toggles = {}
+
+-- [[ UI SETUP ]]
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "DiceAutoRoll_Final"
+ScreenGui.IgnoreGuiInset = true -- Makes sure it ignores top bar
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = PlayerGui
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 250, 0, 350)
+MainFrame.Position = UDim2.new(0.5, -125, 0.5, -175)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true 
+MainFrame.Draggable = true -- Legacy fallback for movement
+MainFrame.Visible = true
+MainFrame.Parent = ScreenGui
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 10)
+MainCorner.Parent = MainFrame
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Title.Text = "  [[ SETTINGS & LIST ]]"
+Title.TextColor3 = Color3.fromRGB(255, 65, 65)
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 14
+Title.Parent = MainFrame
+
+local TitleCorner = Instance.new("UICorner")
+TitleCorner.CornerRadius = UDim.new(0, 10)
+TitleCorner.Parent = Title
+
+local Scroll = Instance.new("ScrollingFrame")
+Scroll.Size = UDim2.new(1, -10, 1, -50)
+Scroll.Position = UDim2.new(0, 5, 0, 45)
+Scroll.BackgroundTransparency = 1
+Scroll.BorderSizePixel = 0
+Scroll.CanvasSize = UDim2.new(0, 0, 0, #diceList * 38)
+Scroll.ScrollBarThickness = 2
+Scroll.ScrollBarImageColor3 = Color3.fromRGB(255, 65, 65)
+Scroll.Parent = MainFrame
+
+local ListLayout = Instance.new("UIListLayout")
+ListLayout.Parent = Scroll
+ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+ListLayout.Padding = UDim.new(0, 5)
+
+-- [[ GENERATE LIST ]]
+for i, diceName in ipairs(diceList) do
+    Toggles[diceName] = false
+
+    local Item = Instance.new("Frame")
+    Item.Size = UDim2.new(1, -10, 0, 32)
+    Item.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    Item.BorderSizePixel = 0
+    Item.Parent = Scroll
+
+    Instance.new("UICorner", Item).CornerRadius = UDim.new(0, 6)
+
+    local Label = Instance.new("TextLabel")
+    Label.Size = UDim2.new(0.65, 0, 1, 0)
+    Label.Position = UDim2.new(0.05,
